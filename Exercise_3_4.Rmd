@@ -1,0 +1,108 @@
+---
+title: "Untitled"
+date: "24 Februar 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = '/Users/Antoine/Documents/biostat/data')
+```
+
+## Exercise 3
+The file farm.dat contains the size A (in acres), the number of cows C and the income I
+(in $) of 20 farms in the US. You find the data set on ILIAS.
+
+a) Compute an ordinary linear regression of I versus C. Does the income depend on the number of
+cows?
+```{r}
+
+farm <- read.table("farm.dat",header = T)
+lm1 <- lm(Dollar~cows,farm)
+summary(lm1)
+```
+There is a significant p-value of 0.000475 of cows on income. 
+
+
+b) Give the confidence intervals for the expected income without any cows, with 20 cows, and with C = 8.85 cows.
+```{r}
+predict(lm1, newdata=data.frame(cows=c(0,20,8.85)), interval="confidence")
+```
+
+c) Compute an ordinary linear regression of I versus A and a multiple linear regression of I versus
+A and C. Also compute the correlation between A and C. Finally, based on your results, explain
+the differences between the three regression models.
+```{r}
+lm2 <- lm(Dollar~acres,farm)
+lm3 <- lm(Dollar~cows+acres,farm)
+summary(lm2)
+summary(lm3)
+```
+The number of acres itself has no influence on the income of a farmer. However, combined the cows compensate for the negative effect and the effect of them together is even stronger.
+```{r}
+cor(farm$cows,farm$acres)
+```
+
+
+## Exercise 4
+In this exercise, we again consider the air pollution data set presented in the lecture. In
+a study on the contribution of air pollution to mortality, General Motors collected data from 60
+US cities. The dependent variable is the age adjusted mortality (variable Mortality). The data
+includes variables measuring demographic characteristics of the cities, variables measuring climate
+characteristics, and variables recording the pollution potential of three different air pollutants.
+
+a) Get an overview of the data and account for possible problems. Which of the variables need to
+be transformed?
+```{r, echo=F}
+airpollution <- read.csv('airpollution.csv');airpollution
+dim(airpollution)
+par(mfrow=c(4,4))
+for (i in 2:length(airpollution)){
+  hist(airpollution[,i],main = names(airpollution[i]))
+}
+```
+Transform the following traits: 
+```{r}
+airpollution$Pop <- log(airpollution$Pop)
+airpollution$HC <- log(airpollution$HC)
+airpollution$NOx <- log(airpollution$NOx)
+airpollution$SO2 <- log(airpollution$SO2)
+
+names(airpollution)[names(airpollution)=="Pop"]<-"logPop"
+names(airpollution)[names(airpollution)=="HC"]<- "logHC"
+names(airpollution)[names(airpollution)=="NOx"]<-"logNOx"
+names(airpollution)[names(airpollution)=="SO2"]<-"logSO2"
+
+```
+
+b) Carry out a multiple linear regression containing all variables. Does the model fit well? Check
+the residuals.
+```{r}
+# Exclude the city names
+airpollution <- airpollution[,c(2:length(airpollution))]
+# Calculate the Multiple linear regression model
+lmairpollution <- lm(Mortality~.,airpollution)
+summary(lmairpollution)
+```
+Check the fit of the model:
+```{r}
+
+library(car)
+par(mfrow=c(1,2))
+#par(mfrow = c(1, 2), mar = c(1.5, 2, 1.5, 0.5), cex = 0.5)
+plot(fitted(lmairpollution),resid(lmairpollution),xlab = "Fittings",ylab = "Residuals",main = "Tukey-Anscombe-Plot of all airpollution variables")
+qqPlot(resid(lmairpollution),dist="norm",mean=mean(resid(lmairpollution)),sd=sd(resid(lmairpollution)))
+```
+The model seems to fit very well. Not all variables are significant.
+
+
+c) Now take all the non-significant variables out of the model and compute the regression again.
+Compare your results to part b.).
+```{r}
+lmap_sign <- lm(Mortality~JanTemp+Rain+NonWhite+logNOx,airpollution)
+summary(lmap_sign)
+plot(fitted(lmap_sign),resid(lmap_sign),xlab = "Fittings",ylab = "Residuals",main = "Tukey-Anscombe-Plot of significant airpollution variables")
+qqPlot(resid(lmap_sign),dist="norm",mean=mean(resid(lmap_sign)),sd=sd(resid(lmap_sign)))
+```
+All variables are now highly significant. The model also looks well, all criterias fullfilled. 
+
